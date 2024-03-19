@@ -1,0 +1,273 @@
+
+
+*
+{
+    margin: 0;
+    padding: 0;
+}
+body{
+    margin:0;
+    background-color: black;
+}
+canvas{
+    width: 100%;
+    height: 100%;
+}
+h1{
+    line-height: 0.75em;
+    font-size: 5rem;
+    color: white;
+}
+p{
+    font-size: 1.5em;
+    line-height: 1.75rem;
+    font-family: "Space Mono", monospace;
+    font-weight: 400;
+    font-style: normal;
+    color: white;
+}
+a{
+    font-size: 2em;
+    font-family: "Space Mono", monospace;
+    font-weight: 400;
+    font-style: normal;
+    color: white;
+}
+
+
+
+#menu-icon{
+    position: fixed; 
+    top: 1rem; 
+    right: 1rem; 
+    /* z-index: 100;  */
+    cursor: pointer;
+    opacity: 0.6;
+}
+#menu-icon span {
+    display: block;
+    width: 2rem; /* Width of the hamburger lines */
+    height: 0.3rem; /* Height of the hamburger lines */
+    background-color: white; /* Color of the hamburger lines */
+    margin: 0.3rem 0rem; /* Spacing between the lines */
+    /* transition: all 0.3s ease-in-out; */
+}
+#planet-menu{
+    font-size: 1.5em;
+    line-height: 1.75rem;
+    font-family: "Space Mono", monospace;
+    font-weight: 400;   
+    position: fixed; 
+    top: 0; 
+    right: 0; 
+    width: 12.5rem; 
+    height: 100%; 
+    background: rgba(0,0,0,0.5); 
+    display: none;
+    transition: opacity 0.5s ease, right 0.5s ease; /* Smooth transition for opacity and right property */
+    opacity: 0.6;
+}
+#planet-menu ul {
+    margin: 0;
+    padding: 0;
+}
+#planet-menu li {
+    padding: 1rem;
+    border-bottom: 1px solid #ccc;
+}
+#planet-menu li:hover {
+    background-color: #333;
+}
+#planet-list{
+    list-style: none; 
+    padding: 2rem; 
+    color: white;
+}
+#introText {
+    position: fixed;
+    top: 2rem;
+    left: 2rem;
+    opacity: 0.6;
+}
+
+#planet-info-overlay {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80vw; /* Fixed width */
+    height: 60vh; /* Fixed height */
+    background: rgba(20, 26.7, 51.4, 0.6);
+    color: white;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    /* z-index: 1000; */
+    overflow: auto;
+    display: none; /* Hidden by default */
+}
+#overlay-header{
+    height: 40%;
+    align-items: center;
+}
+#overlay-body{
+    height: 40%;
+    margin: 0;
+}
+#overlay-links{
+    display: block;
+    height: 20%;
+    /* display: flex; */
+    
+}
+
+#planet-tabs {
+    display: flex; /* Aligns children (links) in a row */
+    width: 100%; /* Ensures the container takes up the full width */
+    justify-content: flex-start; /* Aligns children at the start of the container */
+    align-content: top;
+}
+#planet-links{
+    position: relative;
+    display: block;
+    width: 100%; /* Ensures the container takes up the full width */
+    height: 20%;
+    align-items: center;
+    
+    
+}
+
+
+
+.wlcmH1{
+    /* font-family: cursive; */
+    font-weight: normal;
+    font-family: "Space Grotesk", sans-serif;
+    font-weight: 600;
+    user-select: none;
+    /* animation-name: welcomeText;
+    animation-duration: 4s;
+    animation-delay: 2s;
+    animation-fill-mode: forwards; */
+}
+.p1{
+    color: white;
+    opacity: 1;
+    user-select: none;
+    /* animation-name: secondaryText;
+    animation-duration: 4s;
+    animation-delay: 7s;
+    animation-fill-mode: forwards; */
+}
+.planetName{
+    top: 1.3vw;
+    left: 1vw;
+    position: relative;
+    font-size: 5rem;
+    font-weight:normal;
+    font-family: "Space Grotesk", sans-serif;
+    font-weight: 600;
+    font-size: 6rem;
+    width: 25%;
+    cursor: pointer;
+}
+.planetInformation{
+    font-size: 1.5em;
+    font-family: "Space Mono", monospace;
+    font-weight: 400;
+    position: relative;
+    top: 15%;
+    margin: 0 auto;
+    width: 40%;
+    text-align: center;
+}
+.planet-info-tabs{
+    font-size: 2em;
+    position: relative;
+    flex-grow: 1; /* Allows the link to grow and fill the available space */
+    padding: 1.8%; /* Adds some space inside each box */
+    background-color: rgba(0, 123, 255, 0.3); /* Adjusted background color with opacity */
+    color: white; /* Text color */
+    text-align: center; /* Centers the text inside the box */
+    text-decoration: none; /* Removes underline from links */
+    box-sizing: border-box; /* Ensures padding is included in the element's total width */
+    transition: background-color 0.3s; /* Smooth transition for hover effect */
+    margin: 0; /* Removes any default margin */
+    font-size: 2rem;
+    margin-top: 5%;
+    cursor: pointer;
+}
+.planet-info-tabs:hover {
+    background-color: #0056b3; /* Darker shade when hovered */
+}
+.planet-info-links{
+    display: block;
+    font-size: 1.5em;
+    position: relative;
+    padding: 0.5%; 
+    background-color: rgba(0, 123, 255, 0.3); /* Adjusted background color with opacity */
+    color: white; /* Text color */
+    text-align: center; /* Centers the text inside the box */
+    text-decoration: none; /* Removes underline from links */
+    box-sizing: border-box; /* Ensures padding is included in the element's total width */
+    transition: background-color 0.3s; /* Smooth transition for hover effect */
+    width: 15%;
+    margin: 0 auto;
+    margin-top: 2%;
+    margin-bottom: 0%;
+    cursor: pointer;
+    
+}
+.planet-info-links:hover {
+    background-color: #0056b3; /* Darker shade when hovered */
+}
+.hidden {
+    display: none;
+}
+.closeButton {
+    position: absolute;
+    background-color: rgba(0, 0, 255, 0);
+    color: #FFFFFF;
+    font-size: 5em;
+    border: none;
+    cursor: pointer;
+    /* align-content: right; */
+    top: 1%;
+    right: 1vw;
+    opacity: 1;
+}
+.closeButton:hover{
+    color: red;
+}
+
+
+
+
+@keyframes welcomeText{
+    0% {font-size: 10rem; }
+    100%{font-size: 5rem; animation-timing-function: ease-out; }
+}
+@keyframes secondaryText{
+    0%{opcaity: 0;}
+    100%{opacity: 1;}
+}
+@media(max-width: 800px){
+    .wlcmH1{
+        font-size: 2rem;
+    }
+}
+@media(min-width: 801px){
+    .wlcmH1{
+        font-size: 5rem;
+    }
+}
+/* 
+(First condition max-width up to 400, the rest can be min-width
+
+400 older devices
+600 newer phone phone
+768 older/ tablets 
+1000 older laptops
+1440 newer laptops
+1800 projectors
+
+*/
