@@ -121,6 +121,7 @@ a{
 }
 
 #planet-tabs {
+    position: relative;
     display: flex; /* Aligns children (links) in a row */
     width: 100%; /* Ensures the container takes up the full width */
     justify-content: flex-start; /* Aligns children at the start of the container */
