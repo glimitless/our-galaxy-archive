@@ -109,18 +109,18 @@ a{
 }
 #overlay-header{
     position:relative;
-    height: 40%;
+    height: 15rem;
     align-items: center;
 }
 #overlay-body{
     position: relative;
-    height: 40%;
+    height: 10rem;
     margin: 0;
 }
 #overlay-links{
     position: relative;
     display: block;
-    height: 20%;
+    height: 5rem;
     /* display: flex; */
     
 }
@@ -169,11 +169,10 @@ a{
     top: 1.3vw;
     left: 1vw;
     position: relative;
-    font-size: 3rem;
+    font-size: 5rem;
     font-weight:normal;
     font-family: "Space Grotesk", sans-serif;
     font-weight: 600;
-    font-size: 6rem;
     width: 25%;
     cursor: pointer;
 }
@@ -199,7 +198,7 @@ a{
     transition: background-color 0.3s; /* Smooth transition for hover effect */
     margin: 0; /* Removes any default margin */
     font-size: 2rem;
-    margin-top: 5%;
+    margin-top: 2rem;
     cursor: pointer;
 }
 .planet-info-tabs:hover {
