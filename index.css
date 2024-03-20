@@ -171,7 +171,6 @@ a{
     cursor: pointer;
 }
 .planetInformation{
-    font-size: 0.5em;
     font-family: "Space Mono", monospace;
     font-weight: 400;
     position: relative;
@@ -181,7 +180,7 @@ a{
     text-align: center;
 }
 .planet-info-tabs{
-    font-size: 2em;
+    font-size: 2rem;
     position: relative;
     flex-grow: 1; /* Allows the link to grow and fill the available space */
     padding: 1.8%; /* Adds some space inside each box */
@@ -201,7 +200,7 @@ a{
 }
 .planet-info-links{
     /* display: block; */
-    font-size: 1.5em;
+    font-size: 1.5rem;
     position: relative;
     padding: 0.5%; 
     background-color: rgba(0, 123, 255, 0.3); /* Adjusted background color with opacity */
@@ -227,7 +226,7 @@ a{
     position: absolute;
     background-color: rgba(0, 0, 255, 0);
     color: #FFFFFF;
-    font-size: 5em;
+    font-size: 5rem;
     border: none;
     cursor: pointer;
     /* align-content: right; */
