@@ -186,7 +186,7 @@ a{
     text-align: center;
 }
 .planet-info-tabs{
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     position: relative;
     flex-grow: 1; /* Allows the link to grow and fill the available space */
     padding: 1.8%; /* Adds some space inside each box */
