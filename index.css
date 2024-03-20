@@ -106,14 +106,17 @@ a{
     display: none; /* Hidden by default */
 }
 #overlay-header{
+    position:relative;
     height: 40%;
     align-items: center;
 }
 #overlay-body{
+    position: relative;
     height: 40%;
     margin: 0;
 }
 #overlay-links{
+    position: relative;
     display: block;
     height: 20%;
     /* display: flex; */
@@ -121,6 +124,7 @@ a{
 }
 
 #planet-tabs {
+    margin-bottom: 0.5rem;
     position: relative;
     display: flex; /* Aligns children (links) in a row */
     width: 100%; /* Ensures the container takes up the full width */
