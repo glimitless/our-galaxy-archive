@@ -159,7 +159,7 @@ const planetDescriptions = {
     {name: "astrology", description: "In astrology, Neptune is associated with dreams, intuition, and the subconscious. Its position is thought to influence creativity, spirituality, and our connection with universal truths."},
   ]
 };
-// ↗
+
 const planetLinks = {
   mercury: [
     {name: "moons", url:"https://phys.org/news/2016-01-moons-mercury.html"},
@@ -321,7 +321,7 @@ function render() {
             
             object.material.color.set(0xff0000); // Set color to red for intersected objects
             clickPlanet(object);
-          
+            
           } else {
             object.material.color.set(0xffffff); // Set color to white for non-intersected objects
           }
@@ -362,19 +362,44 @@ function clickPlanet(planet){
       // Toggle the clickedPlanet state
       if(clickedPlanet === planet){
 
+        scene.children.forEach((child) =>{
+            if(planet.name === child.name){
+                
+
+                
+                child.rotation.z = planets[planet.name].orbitIncline * Math.PI/180;
+            }
           
+          
+        });
           clickedPlanet = null;
           returnToCenter = true;
           hideOverlay();
 
+          
+
+
+          
           // Show the intro text again
           document.getElementById('introText').style.display = 'block';
 
           navPass = false;
           
       } else {
+          
+          
           clickedPlanet = planet;
-    
+          
+          scene.children.forEach((child) =>{
+              
+              if(planet.name === child.name){
+                  child.rotation.z = 0;
+              
+              }
+
+            }
+          )
+
           showOverlayForPlanet(planet);
 
           
@@ -677,6 +702,7 @@ function initPlanets(){
         mercuryMesh.name = "mercury";
         
         const mercuryGroup = new THREE.Group();
+        mercuryGroup.name = "mercury";
         
         mercuryGroup.rotation.z = planets.mercury.orbitIncline * Math.PI/180;
         mercuryGroup.add(mercuryMesh);
@@ -712,6 +738,8 @@ function initPlanets(){
       venusMesh.name = "venus";
       
       const venusGroup = new THREE.Group();
+      venusGroup.name = "venus";
+
       venusGroup.rotation.z = planets.venus.orbitIncline * Math.PI/180;
       venusGroup.add(venusMesh);
       
@@ -759,6 +787,7 @@ function initPlanets(){
         // earthCloudsMesh.scale.setScalar(1.003);
         
         const earthGroup= new THREE.Group();
+        earthGroup.name = "earth";
         
         earthGroup.rotation.z = planets.earth.orbitIncline * Math.PI/180;
         earthGroup.add(earthMesh);
@@ -799,6 +828,7 @@ function initPlanets(){
 
       // Creates group of all meshes
       const marsGroup = new THREE.Group();
+      marsGroup.name = "mars";
       
       marsGroup.rotation.z = planets.mars.orbitIncline * Math.PI/180;
       marsGroup.add(marsMesh);
@@ -830,6 +860,8 @@ function initPlanets(){
       
       // Creates group of all meshes
       const jupiterGroup = new THREE.Group();
+      jupiterGroup.name = "jupiter";
+
       jupiterGroup.rotation.z = planets.jupiter.orbitIncline * Math.PI/180;
       jupiterGroup.add(jupiterMesh);
       
@@ -860,6 +892,8 @@ function initPlanets(){
       
       // Creates group of all meshes
       const saturnGroup = new THREE.Group();
+      saturnGroup.name = "saturn";
+
       saturnGroup.rotation.z = planets.saturn.orbitIncline * Math.PI/180;
       saturnGroup.add(saturnMesh);
       
@@ -890,6 +924,8 @@ function initPlanets(){
       
       // Creates group of all meshes
       const uranusGroup = new THREE.Group();
+      uranusGroup.name = "uranus";
+
       uranusGroup.rotation.z = planets.uranus.orbitIncline * Math.PI/180;
       uranusGroup.name = "uranus";
       uranusGroup.add(uranusMesh);
@@ -922,6 +958,7 @@ function initPlanets(){
       // Creates group of all meshes
       const neptuneGroup = new THREE.Group();
       neptuneGroup.name = "neptune";
+
       neptuneGroup.rotation.z = planets.neptune.orbitIncline * Math.PI/180;
       neptuneGroup.add(neptuneMesh);
       
