@@ -19,7 +19,7 @@ h1{
     color: white;
 }
 p{
-    font-size: 1.5em;
+    font-size: 0.5rem;
     line-height: 1.75rem;
     font-family: "Space Mono", monospace;
     font-weight: 400;
@@ -171,7 +171,7 @@ a{
     cursor: pointer;
 }
 .planetInformation{
-    font-size: 1.5em;
+    font-size: 0.5em;
     font-family: "Space Mono", monospace;
     font-weight: 400;
     position: relative;
@@ -200,7 +200,7 @@ a{
     background-color: #0056b3; /* Darker shade when hovered */
 }
 .planet-info-links{
-    display: block;
+    /* display: block; */
     font-size: 1.5em;
     position: relative;
     padding: 0.5%; 
