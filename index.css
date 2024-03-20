@@ -169,7 +169,7 @@ a{
     top: 1.3vw;
     left: 1vw;
     position: relative;
-    font-size: 5rem;
+    font-size: 3rem;
     font-weight:normal;
     font-family: "Space Grotesk", sans-serif;
     font-weight: 600;
@@ -186,7 +186,7 @@ a{
     text-align: center;
 }
 .planet-info-tabs{
-    font-size: 2rem;
+    font-size: 1.5rem;
     position: relative;
     flex-grow: 1; /* Allows the link to grow and fill the available space */
     padding: 1.8%; /* Adds some space inside each box */
@@ -197,7 +197,6 @@ a{
     box-sizing: border-box; /* Ensures padding is included in the element's total width */
     transition: background-color 0.3s; /* Smooth transition for hover effect */
     margin: 0; /* Removes any default margin */
-    font-size: 2rem;
     margin-top: 2rem;
     cursor: pointer;
 }
