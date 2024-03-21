@@ -178,6 +178,7 @@ a{
     color: white;
     opacity: 1;
     user-select: none;
+    margin-top: -0.9rem;
 }
 
 /* Styles the name of the planet in the overlay div */

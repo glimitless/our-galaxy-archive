@@ -266,6 +266,7 @@ planetNames.forEach(name => {
   const li = document.createElement('li');
   li.textContent =  name
   li.style.cursor = 'pointer';
+  // Redirects the camera to track the planet clicked on in the planet navigation menu
   li.addEventListener('click', function() {
     
 
