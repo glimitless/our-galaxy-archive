@@ -1,10 +1,11 @@
 
 
+// Imports three.js library
 import * as THREE from 'three';
+
+// Allows orbit controls to be called as a method
 import { OrbitControls } from './three/examples/jsm/controls/OrbitControls.js';
 
-// let frameCount = 0;
-// const throttleInterval = 0; // Adjust the interval as needed
 
 // initiates the three.js scene
 const { camera, renderer, scene, loader, initialCameraPosition } = initScene();
@@ -17,51 +18,56 @@ const sunLight = initSunlight();
   
 // Gets the camera position
 const cameraPosition = camera.position;
+// Checks if camera needs to be reset into starting position
 var returnToCenter = false;
 
-
+// Initiates raycaster
 const raycaster = new THREE.Raycaster();
+// Initiates raycaster target
 const pointer = new THREE.Vector2();
+
+// Confirms if user is clicking the mouse
 var isMouseDown = false;
+
+// Allows for planet navigation menu to run clickPlanet() function
 var navPass = false;
+
+// Checks if planet overlay is currently displayed
 var isOverlayUp = false;
 
+// Resizes javascript canvas whenever viewport is resized
 window.addEventListener('resize', onWindowResize);
 
+// Listens for whenever mouse is clicked
 document.addEventListener('click', function(event) {
     // Mouse button is pressed down
     isMouseDown = true;
 
     // Resets isMouseDown to false
     setTimeout(function() {
+      // Mouse button is released
       isMouseDown = false;
     }, 10);
 });
+
+// Records current position of mouse
 document.addEventListener( 'pointermove', onPointerMove );
 
+// Closes overlay when x icon is pressed
 document.getElementById('close-overlay').addEventListener('click', hideOverlay);
 
-// Example planet objects setup
-let planetOrbitInclines = {
-  mercury: { name: "mercury", defaultOrbitIncline: 7.0 },
-  venus: { name: "venus", defaultOrbitIncline: 3.395 },
-  earth: { name: "earth", defaultOrbitIncline: 0 },
-  mars: { name: "mars", defaultOrbitIncline: 1.848 },
-  jupiter: { name: "jupiter", defaultOrbitIncline: 1.31},
-  saturn: { name: "saturn", defaultOrbitIncline: 2.486},
-  uranus: { name:"uranus", defaultOrbineIncline: 0.770},
-  neptune: { name:"neptune", defaultOrbitIncline: 1.770}
-};
 
+// Initiates mesh layers of planets
 let mercuryMesh;
 let venusMesh;
-let earthMesh, earthLightsMesh, earthCloudsMesh;
+let earthMesh;
 let marsMesh;
 let jupiterMesh;
 let saturnMesh;
 let uranusMesh;
 let neptuneMesh;
 
+// Holds all movement variables of planets
 const planets = {
   mercury: {orbitIncline: 7.0, orbitRadius: 50, orbitSpeed: 0.00479, rotationSpeed: 0.001083, start: Math.random() * 360,},
   venus: {orbitIncline: 3.395, orbitRadius: 75, orbitSpeed: 0.0035, rotationSpeed: 0.00652, start: Math.random() * 360,},
@@ -72,6 +78,8 @@ const planets = {
   uranus: {orbitIncline: 0.770, orbitRadius: 200, orbitSpeed: 0.000681, rotationSpeed: 0.0014794, start: Math.random() * 360},
   neptune: {orbitIncline: 1.770, orbitRadius: 225, orbitSpeed: 0.000543, rotationSpeed: 0.009719, start: Math.random() * 360},
 }
+
+// Holds current positions of planets
 const planetPositions = {
     mercury: {x: Math.cos(planets.mercury.start) * planets.mercury.orbitRadius, z: Math.sin(planets.mercury.start) * planets.mercury.orbitRadius,},
     venus: {x: Math.cos(planets.venus.start) * planets.venus.orbitRadius, z: Math.sin(planets.venus.start) * planets.venus.orbitRadius},
@@ -84,7 +92,11 @@ const planetPositions = {
 
 
 }
+
+// Sets default size of all planets
 const planetSize = 4;
+
+// Holds all description text for planet overlay div
 const planetDescriptions = {
   mercury: [
     {name: "summary", description: "Mercury is the smallest and innermost planet in the Solar System. It is named after the Roman deity Mercury, the messenger of the gods."},
@@ -160,6 +172,7 @@ const planetDescriptions = {
   ]
 };
 
+// Holds all links for planet overlay div
 const planetLinks = {
   mercury: [
     {name: "moons", url:"https://phys.org/news/2016-01-moons-mercury.html"},
@@ -229,11 +242,14 @@ const planetLinks = {
 
 };
 
+// Stores the planet that was last clicked on
 let clickedPlanet = null;
 
 
 // Initiates the stars
 const stars = getStarfield();
+
+// Adds stars to the scene
 scene.add(stars);
 
 // Initiates the orbit controls
@@ -243,7 +259,7 @@ const controls = new OrbitControls(camera, renderer.domElement);
 initPlanets();
 
 
-// Populate the planet menu
+// Populates the planet menu
 const planetNames = Object.keys(planets);
 const planetList = document.getElementById('planet-list');
 planetNames.forEach(name => {
@@ -270,9 +286,10 @@ planetNames.forEach(name => {
   planetList.appendChild(li);
 });
 
+// Waits for document to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
  
-     // Event listener for clicks on the document
+  // Opens planet menus when menu icon is clicked on
   document.addEventListener('click', function(event) {
     var planetMenu = document.getElementById('planet-menu');
     var menuIcon = document.getElementById('menu-icon');
@@ -290,90 +307,94 @@ document.addEventListener('DOMContentLoaded', function() {
    
    
 });
-console.log(scene.children);
 
 
-// Call the render function to start rendering
+// Renders the Javascript scene
 render();
 
 
-// Create a render function
+// Renders Javascript scene
 function render() {
-    // frameCount++;
     
+    // Updates the picking ray with the camera and pointer position
+    raycaster.setFromCamera(pointer, camera);
     
-    
-  
-    // if (frameCount % throttleInterval === 0) {
-    // update the picking ray with the camera and pointer position
-    raycaster.setFromCamera( pointer, camera );
-    
-    // calculate objects intersecting the picking ray
-    const intersects = raycaster.intersectObjects( scene.children );
+    // Calculates objects intersecting the picking ray
+    const intersects = raycaster.intersectObjects(scene.children);
     
     // Change color of intersected objects to red and reset others to white
+    // Also checks if planet has been clicked
     for (var i=0; i < scene.children.length; i++) {
       for(const object of scene.children[i].children){
         if (object.material) {
           const isIntersected = intersects.find(intersect => intersect.object === object);
 
+          
           if (isIntersected && !isOverlayUp) {
             
-            object.material.color.set(0xff0000); // Set color to red for intersected objects
+            // Sets color to red for intersected objects
+            object.material.color.set(0xff0000); 
+
+            // Checks if planet has been clicked on, if yes runs the appropriate script
             clickPlanet(object);
             
           } else {
-            object.material.color.set(0xffffff); // Set color to white for non-intersected objects
+            // Sets color to white for non-intersected objects
+            object.material.color.set(0xffffff); 
           }
         }
       }
     }
     
 
-    // frameCount = 0;
-    // }
-    // Update sunlight position to match camera position
+    // Updates sunlight position to match camera position
     sunLight.position.copy(camera.position);
 
-    // Calculate the forward direction of the camera
+    // Calculates the forward direction of the camera
     const cameraDirection = new THREE.Vector3();
     camera.getWorldDirection(cameraDirection);
 
-    // Calculate a target position based on the camera's forward direction
+    // Calculates a target position based on the camera's forward direction
     const targetPosition = new THREE.Vector3().addVectors(camera.position, cameraDirection);
 
-    // Update the sunlight to face the target position
+    // Updates the sunlight to face the target position
     sunLight.target.position.copy(targetPosition);
     sunLight.target.updateMatrixWorld();
 
+    // If planet has been clicked, sets camera to follow the planet
     followPlanet();
-    // updateOverlayForPlanet(clickedPlanet);
+    
+    // Updates position of the planets
     updateData();
+
     // Render the scene
     renderer.render(scene, camera);
-
 
     // Amimates the render
     requestAnimationFrame(render);
     
 }
+
+// Checks if planet has planet clicked on. If yes runs the appropriate script.
 function clickPlanet(planet){
   if(isMouseDown || navPass){
       // Toggle the clickedPlanet state
       if(clickedPlanet === planet){
 
+        // Returns the orbital incline the planet to original value
         scene.children.forEach((child) =>{
             if(planet.name === child.name){
-                
-
-                
                 child.rotation.z = planets[planet.name].orbitIncline * Math.PI/180;
             }
-          
-          
         });
+
+          // Confirms no planet should be tracked by camera
           clickedPlanet = null;
+
+          // Confirms camera should be returned to center of scene
           returnToCenter = true;
+
+          // Hides the planet overlay
           hideOverlay();
 
           
@@ -383,77 +404,93 @@ function clickPlanet(planet){
           // Show the intro text again
           document.getElementById('introText').style.display = 'block';
 
+          // Ends the planet navigation menu's access to the clickPlanet() function
           navPass = false;
           
       } else {
           
-          
+          // Indicates which planet for the camera to track
           clickedPlanet = planet;
-          
+
+          // Sets the orbital incline of the planet to zero
           scene.children.forEach((child) =>{
-              
               if(planet.name === child.name){
                   child.rotation.z = 0;
-              
               }
-
             }
           )
 
+          // Opens overlay div for the clicked planet
           showOverlayForPlanet(planet);
 
-          
-          
-          // Hide the intro text
+          // Hides the intro text
           document.getElementById('introText').style.display = 'none';
           
+          // Ends the planet navigation menu's access to the clickPlanet() function
           navPass = false;
       }
   }
 }
 
+// Opens overlay div for the specified planet
 function showOverlayForPlanet(planet) {
+
+    // Creates references to existing html divs
     const overlay = document.getElementById('planet-info-overlay');
     const planetName = document.getElementById('planet-name');
     const descriptionContainer = document.getElementById('planet-description');
 
-    // Find the description within the object for the given planet name
+    // Finds the description within an object for the given planet name
     const descriptionFromObject = planetDescriptions[planet.name.toLowerCase()].find(entry => entry.name === "summary");
 
- 
+    // Sets the name and description based on the clicked planet
+    planetName.textContent = planet.name;
 
-    // Set the name and description based on the clicked planet
-    planetName.textContent = planet.name; // Assuming the planet object has a 'name' property
+    // Returns description to planet summary text whenever the planet name is clicked
     document.getElementById('planet-name').addEventListener('click', createNameClickListener(planet.name));
 
+    // Sets the tabs of the planet overlay div
     setPlanetTabs(planet.name.toLowerCase());
 
+    // fills the description container with the planet summary text
     descriptionContainer.textContent = descriptionFromObject.description // Using the planetDescriptions object
 
     
     
-    
-    overlay.style.display = 'block'; // Show the overlay
+    // Displays the planet overlay
+    overlay.style.display = 'block'; 
+
+    // Confirms the planet overlay is visible
     isOverlayUp = true;
 }
+
+// Allows for planet name event listener to be referenced
 function createNameClickListener(planetName) {
   // This function now directly handles clicks on the #planet-name element
   return function(event) {
-    // Directly call the handler without searching the DOM
+    // Directly calls the handler without searching the DOM
     planetNameClickHandler(planetName, event);
   };
 }
 
-function planetNameClickHandler(planetName, event){
-  // Since #planet-name is unique, we directly use it without checking its class
+// Handles the event listener for when the planet name is clicked on
+function planetNameClickHandler(planetName){
+  // Updates the overlay div description with a brief summary of the planet 
   const aspectName = "summary";
   updatePlanetDescription(planetName, aspectName);
 }
-function setPlanetTabs(planetName) {
-  const tabsContainer = document.getElementById('planet-tabs');
-  tabsContainer.innerHTML = ''; // Clear existing links
 
+// Sets the tabs for the planet overlay div
+function setPlanetTabs(planetName) {
+  // Creates reference for html div that holds the tabs
+  const tabsContainer = document.getElementById('planet-tabs');
+  // Clears existing tabs
+  tabsContainer.innerHTML = ''; 
+
+  // Isolates object with aspect names & descriptions for specified planet
   const aspects = planetDescriptions[planetName];
+
+  // Creates tab for each aspect
   if (aspects) {
       aspects.forEach(aspect => {
         if(aspect.name != "summary"){
@@ -472,19 +509,22 @@ function setPlanetTabs(planetName) {
   
   }
 
-  // Attach click event listeners to each tab
+  // Attaches click event listeners for each tab
   document.querySelectorAll('.planet-info-tabs').forEach(tab => {
-    // Generate and store the listener function
+    // Generates and stores the listener function
     tab._tabClickListener = createTabClickListener(planetName);
     tab.addEventListener('click', tab._tabClickListener);
   });
 }
-// Function to generate an event listener with parameters
+
+// Allows for planet name event listener to be referenced
 function createTabClickListener(planetName) {
   return function(event) {
     planetTabClickHandler(planetName, event);
   };
 }
+
+// Handles the event listener for when overlay div tab is clicked on
 function planetTabClickHandler(planetName, event) {
   let targetElement = event.target;
   while (targetElement != null && !targetElement.classList.contains('planet-info-tabs')){
@@ -496,19 +536,26 @@ function planetTabClickHandler(planetName, event) {
     updatePlanetDescription(planetName, aspectName);
   }
 }
+
+// Updates the description text of overlay div
 function updatePlanetDescription(planetName, aspectName){
 
-
+  // Creates references to description & links html divs
   const descriptionContainer = document.getElementById('planet-description');
   const linksContainer = document.getElementById('planet-links');
-  descriptionContainer.innerHTML = ''; // Clear existing descriptions
+  // Clears existing descriptions
+  descriptionContainer.innerHTML = ''; 
   linksContainer.innerHTML = ''; 
 
+  // Isolates object with appropriate description
   const descriptionFromObject = planetDescriptions[planetName.toLowerCase()].find(entry => entry.name === aspectName);
 
-  descriptionContainer.textContent = descriptionFromObject.description // Using the planetDescriptions object
+  // Sets overlay div description with appropriate description
+  descriptionContainer.textContent = descriptionFromObject.description
 
+  // Adds appropriate links for all aspects except planet summary
   if(aspectName != "summary"){
+    // Sets appropriate link for aspect description
     const a = document.createElement('a');
     const urlFromObject = planetLinks[planetName.toLowerCase()].find(entry => entry.name === aspectName);
     a.href = urlFromObject.url;
@@ -520,6 +567,8 @@ function updatePlanetDescription(planetName, aspectName){
   
 
 }
+
+// Removes overlay div from display
 function hideOverlay() {
   document.querySelectorAll('.planet-info-tabs').forEach(tab => {
     if (tab._tabClickListener) {
@@ -533,6 +582,8 @@ function hideOverlay() {
   overlay.style.display = 'none'; // Hide the overlay
   isOverlayUp = false;
 }
+
+// If planet has been clicked, tracks camera to the specified planet
 function followPlanet(){
     if(clickedPlanet){
        // Define a fixed distance from the planet to the camera
@@ -544,25 +595,23 @@ function followPlanet(){
        // Calculate the new camera position with the specified distance
        const newPosition = new THREE.Vector3().addVectors(clickedPlanet.position, direction.multiplyScalar(-distance));
 
-       
        // Set the camera to the new position
        camera.position.set(newPosition.x, newPosition.y, newPosition.z);
-
-       
-      
-      //  camera.rotation._z = clickedPlanet.name.toLowerCase().orbitIncline * Math.PI/180;
 
        // Make the camera look at the planet
        camera.lookAt(clickedPlanet.position);
     }else {
         // Reset the camera to the center of the scene
         resetPosition();
-    
     }
 }
- // Function to toggle the planet menu
+
+ // Toggles the planet menu
  function togglePlanetMenu() {
+  // Creates reference to html div for planet menu
   var planetMenu = document.getElementById('planet-menu');
+
+  // Transitions the planet menu from open to closed, or closed to open
   if (planetMenu.style.opacity === '0.6') {
       planetMenu.style.opacity = '0';
       planetMenu.style.right = '-12.5rem'; // Move the menu out of view
@@ -575,12 +624,16 @@ function followPlanet(){
       }, 10); // A slight delay to ensure the display property is applied before transitioning
   }
 }
+
+// Returns camera to center of the screen
 function resetPosition(){
     if(returnToCenter){
         camera.position.set(0, 0, 5);
         returnToCenter = false;
     }
 }
+
+// Updates the positions of moving scene elements
 function updateData(){
     // Rotates Mercury
     mercuryMesh.rotation.y += planets.mercury.rotationSpeed;
@@ -665,17 +718,19 @@ function updateData(){
     
 
 }
-function onPointerMove( event ) {
 
-	// calculate pointer position in normalized device coordinates
-	// (-1 to +1) for both components
+// Tracks the position of the cursor
+function onPointerMove( event ) {
 
 	pointer.x = (event.clientX / window.innerWidth) * 2 - 1;;
 	pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
-  
+
 }
+
+// Initiates the planets into the scene
 function initPlanets(){
+    // Initiates all planets
     initMercury();
     initVenus();
     initEarth();
@@ -684,6 +739,8 @@ function initPlanets(){
     initSaturn();
     initUranus();
     initNeptune();
+
+    // Initiates planet Mercury
     function initMercury(){
       
       // Create a sphere geometry
@@ -718,6 +775,8 @@ function initPlanets(){
       
       
     }
+
+    // Initiates planet Venus
     function initVenus(){
         
       // Create a sphere geometry
@@ -751,6 +810,8 @@ function initPlanets(){
       
       
     }
+
+    // Initiates planet Earth
     function initEarth(){
         
         // Create a sphere geometry
@@ -807,6 +868,8 @@ function initPlanets(){
     
         
     }
+
+    // Initiates planet Mars
     function initMars(){
         
       // Create a sphere geometry
@@ -841,6 +904,8 @@ function initPlanets(){
       
       
     }
+
+    // Initiates planet Jupiter
     function initJupiter(){
         
       // Create a sphere geometry
@@ -873,6 +938,8 @@ function initPlanets(){
       
       
     }
+
+    // Initiates planet Saturn
     function initSaturn(){
         
       // Create a sphere geometry
@@ -905,6 +972,8 @@ function initPlanets(){
       
       
     }
+
+    // Initiates planet Uranus
     function initUranus(){
         
       // Create a sphere geometry
@@ -938,6 +1007,8 @@ function initPlanets(){
       
       
     }
+
+    // Initiates planet Neptune
     function initNeptune(){
         
       // Create a sphere geometry
@@ -971,14 +1042,26 @@ function initPlanets(){
       
     }
 }
+
+// Initiates the sunlight into the scene
 function initSunlight(){
+  // Initiates the sunlight
   const sunLight = new THREE.DirectionalLight(0xffffff);
+
+  // Sets the initial positioning of the sunlight
   sunLight.position.set(0, 0, 5);
-  sunLight.target = new THREE.Object3D(); // Add this line
+
+  // Creates reference for where the sunlight is pointing
+  sunLight.target = new THREE.Object3D();
+
+  // Adds sunlight & sunlight direction reference to the sunlight
   scene.add(sunLight);
-  scene.add(sunLight.target); // And this line
+  scene.add(sunLight.target);
+
   return sunLight;
 }
+
+// Initiates the Javascript 3D environment
 function initScene(){
   // Initiates a scene
   const scene = new THREE.Scene();
@@ -986,6 +1069,7 @@ function initScene(){
   // Initiates a camera
   const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 
+  // Stores the initial position of the camera
   const initialCameraPosition = camera.position.clone();
 
   // Initiates the renderer
@@ -1001,13 +1085,17 @@ function initScene(){
 
   return {camera, renderer, scene, loader, initialCameraPosition};
 }
+
+// Resizes camera & renderer when viewport is resized
 function onWindowResize(){
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
+
+// Initiates stars
+// Code sourced from: https://github.com/bobbyroe/threejs-earth
 function getStarfield({ numStars = 500} = {}) {
-  // Adjust the neptuneOrbitRadius to match the scale of your scene
 
   function randomSpherePoint() {
     // Generate a radius that is outside of Neptune's orbit
