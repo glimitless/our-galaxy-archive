@@ -273,10 +273,22 @@ planetNames.forEach(name => {
       for (var i=0; i < scene.children.length; i++){
           for(const object of scene.children[i].children){
             if(object.material){
-              if (object.name === name) {
-                navPass = true;
-                clickPlanet(object);
-              }
+                if (object.name === name) {
+                    // Allows clickPlanet() function to be run
+                    navPass = true;
+
+                     // If a planet was previously clicked, returns the orbital incline the planet to its original value 
+                    if(clickedPlanet){
+                        scene.children.forEach((child) =>{
+                            if(clickedPlanet.name === child.name){
+                              child.rotation.z = planets[clickedPlanet.name].orbitIncline * Math.PI/180;
+                            }
+                        });
+                    }
+
+                    // Redirects camera to focus on the selected planet
+                    clickPlanet(object);
+                }
             } 
           }
       }
