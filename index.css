@@ -127,7 +127,7 @@ a{
 /* Header section of overlay div */
 #overlay-header{
     position:relative;
-    height: 10rem;
+    min-height: 10rem;
     align-items: center;
 }
 
@@ -153,6 +153,7 @@ a{
     width: 100%; /* Ensures the container takes up the full width */
     justify-content: flex-start; /* Aligns children at the start of the container */
     align-content: top;
+    flex-wrap: wrap; /* Allows children to wrap into new rows */
 }
 
 /* Styles the links of the overlay div */
@@ -192,6 +193,7 @@ a{
     font-weight: 600;
     width: 25%;
     cursor: pointer;
+    margin-bottom: 2rem;
 }
 
 /* Styles the description text in the overlay div */
@@ -218,7 +220,6 @@ a{
     box-sizing: border-box; /* Ensures padding is included in the element's total width */
     transition: background-color 0.3s; /* Smooth transition for hover effect */
     margin: 0; /* Removes any default margin */
-    margin-top: 2rem;
     cursor: pointer;
 }
 
@@ -281,9 +282,15 @@ a{
 /* Styles set when viewport width is under 601 pixels */
 @media(max-width: 600px){
     .wlcmH1{
+        
         font-size: 2rem;
         line-height: 2rem;
     }
+    .planet-info-tabs{
+        flex-basis: 50%; /* Each tab will take up half the container's width, causing them to wrap into two rows */
+        
+    }
+    
 }
 
 /* Styles set viewport exceeds 600 pixels */
