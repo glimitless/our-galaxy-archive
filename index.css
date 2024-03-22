@@ -278,29 +278,31 @@ a{
 }
 
 
-
-
-/* Styles set when viewport width is under 601 pixels */
-@media(max-width: 600px){
-    .wlcmH1{
-        
-        font-size: 2rem;
-        line-height: 2rem;
-    }
-    .planet-info-tabs{
-        flex-basis: 50%; /* Each tab will take up half the container's width, causing them to wrap into two rows */
-        
-    }
-    
-}
-
-/* Styles set viewport exceeds 600 pixels */
-@media(min-width: 601px){
-    .wlcmH1{
-        font-size: 2rem;
-        line-height: 2rem;
+/* Media query for smaller screens */
+@media (min-width: 1401px) {
+    .planet-info-tabs {
+        flex-basis: 0; 
     }
 }
+
+@media (min-width: 601px) and (max-width: 1400px){
+    .planet-info-tabs {
+        flex-basis: 33.33%; /* Adjust to fit 3 tabs per row */
+    }
+}
+
+@media (min-width: 501px) and (max-width: 600px) {
+    .planet-info-tabs {
+        flex-basis: 50%; /* Adjust to fit 2 tabs per row */
+    }
+}
+@media (max-width: 500px) {
+    .planet-info-tabs {
+        flex-basis: 100%; /* Adjust to fit 2 tabs per row */
+    }
+}
+
+
 
 /*
  
