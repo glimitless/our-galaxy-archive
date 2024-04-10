@@ -3,17 +3,30 @@
 // Imports three.js library
 import * as THREE from 'three';
 
+
 // Allows orbit controls to be called as a method
 import { OrbitControls } from './three/examples/jsm/controls/OrbitControls.js';
+
+import { FontLoader } from './three/examples/jsm/loaders/FontLoader.js';
+
+import { TextGeometry } from './three/examples/jsm/geometries/TextGeometry.js';
+
 
 
 // initiates the three.js scene
 const { camera, renderer, scene, loader, initialCameraPosition } = initScene();
+
+let loadedFont;
+
+loadFont()
+
 // Positions the camera
 camera.position.z = 5;
 // Initiates the sunlight
 const sunLight = initSunlight();
 
+var framePerSec = 0;
+var timer = 0;
 
   
 // Gets the camera position
@@ -27,13 +40,94 @@ const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 
 // Confirms if user is clicking the mouse
-var isMouseDown = false;
+let isMouseDown = false;
 
 // Allows for planet navigation menu to run clickPlanet() function
-var navPass = false;
+let navPass = false;
 
 // Checks if planet overlay is currently displayed
-var isOverlayUp = false;
+let isOverlayUp = false;
+
+let isInBirdsEyeView = false;
+
+let sunGrowthVariable = 0.001;
+// code for later: glowMesh.scale.setScalar(1.01);
+
+let allOrbits = [];
+let textMeshes = [];
+
+// Define the starting position and birds-eye view position
+const startingPosition = new THREE.Vector3(0, 0, 5); // Example starting position
+const birdsEyeViewPosition = new THREE.Vector3(0, 350, 0); // Example birds-eye view position
+
+// Define the starting rotation and birds-eye view rotation
+const startingRotation = new THREE.Euler(0, 0, 0); // Example starting rotation
+const birdsEyeViewRotation = new THREE.Euler(-Math.PI / 2, 0, 0); // Example birds-eye view rotation, looking down
+
+
+// Co
+// Add event listener to the switch
+document.getElementById('viewToggle').addEventListener('change', function(event) {
+  timer = 0;
+  if (event.target.checked) {
+    // Switch to birds-eye view
+    isInBirdsEyeView = true;
+    camera.position.copy(birdsEyeViewPosition);
+    camera.rotation.copy(birdsEyeViewRotation);
+    scene.children.forEach((child) =>{
+      if(child.name === "stars"){
+          child.visible = false;
+      }
+    });
+
+    initSun();
+    outlineAllOrbits();
+    samePlanetAngles();
+    
+  } else {
+    // Return to starting view
+    isInBirdsEyeView = false;
+    camera.position.copy(startingPosition);
+    camera.rotation.copy(startingRotation);
+    scene.children.forEach((child) =>{
+      if(child.name === "stars"){
+          child.visible = true;
+      }
+      if(child.name === "sun"){
+            // Remove the object from the scene
+            scene.remove(child);
+
+            // Dispose of geometry
+            if (child.geometry) {
+                child.geometry.dispose();
+            }
+
+            // Dispose of material
+            if (child.material) {
+                // If the object has a material array, dispose of each material
+                if (Array.isArray(child.material)) {
+                    child.material.forEach(material => material.dispose());
+                } else {
+                    child.material.dispose();
+                }
+            }
+
+            // Dispose of textures (if any)
+            if (child.material && child.material.map) {
+                child.material.map.dispose();
+            }
+            }
+            });
+    
+    sun = null;
+    removeAllOrbitAndTextMeshes();  
+    randomizePlanetAngles();
+  }
+
+  // Update the camera
+  camera.updateProjectionMatrix();
+});
+
 
 // Resizes javascript canvas whenever viewport is resized
 window.addEventListener('resize', onWindowResize);
@@ -66,6 +160,8 @@ let jupiterMesh;
 let saturnMesh;
 let uranusMesh;
 let neptuneMesh;
+let sunMesh;
+
 
 // Holds all movement variables of planets
 const planets = {
@@ -78,6 +174,7 @@ const planets = {
   uranus: {orbitIncline: 0.770, orbitRadius: 200, orbitSpeed: 0.000681, rotationSpeed: 0.0014794, start: Math.random() * 360},
   neptune: {orbitIncline: 1.770, orbitRadius: 225, orbitSpeed: 0.000543, rotationSpeed: 0.009719, start: Math.random() * 360},
 }
+
 
 // Holds current positions of planets
 const planetPositions = {
@@ -93,6 +190,17 @@ const planetPositions = {
 
 }
 
+const orbitColors = {
+  base: {color: "#ffffff",},
+  mercury: {key: 0, color:"#B7B8B9",},
+  venus: {key: 1, color:"#e39e1c",},
+  earth: {key: 2, color: "#4F6F52",},
+  mars: {key: 3, color: "#c1440e",},
+  saturn: {key: 4, color: "#ceb8b8",},
+  jupiter: {key: 5, color: "#c99039",},
+  uranus: {key: 6, color: "#37c0d6",},
+  neptune: {key: 7, color: "#5b5ddf",},
+}
 // Sets default size of all planets
 const planetSize = 4;
 
@@ -242,9 +350,47 @@ const planetLinks = {
 
 };
 
+const orbitalPeriods = {
+  mercury: {
+    days: "88",
+    years: "0.241"
+  },
+  venus: {
+    days: "224.7",
+    years: "0.615",
+    },
+  earth: {
+    days: "365.26",
+    years: "1", 
+  },
+  mars: {
+    days: "687",
+    years: "1.882",
+  },
+  jupiter: {
+    days: "4328.9",
+    years: "11.86",
+  },
+  saturn: {
+    days: "10,756",
+    years: "29.4",
+  },
+  uranus: {
+    days: "30,687",
+    years: "84",
+  },
+  neptune: {
+    days: "60,190",
+    years: "165",
+  },
+
+
+}
+
 // Stores the planet that was last clicked on
 let clickedPlanet = null;
 
+let sun = null;
 
 // Initiates the stars
 const stars = getStarfield();
@@ -325,6 +471,9 @@ document.addEventListener('DOMContentLoaded', function() {
 // Renders the Javascript scene
 render();
 
+const MAX_TEXT_SCALE = 3; // Maximum scale for the text mesh
+const TEXT_SCALE_STEP = 0.05; // Incremental step for changing the text mesh scale
+let currentlyHoveredOrbit = [];
 
 // Renders Javascript scene
 function render() {
@@ -337,28 +486,49 @@ function render() {
     
     // Change color of intersected objects to red and reset others to white
     // Also checks if planet has been clicked
-    for (var i=0; i < scene.children.length; i++) {
-      for(const object of scene.children[i].children){
-        if (object.material) {
-          const isIntersected = intersects.find(intersect => intersect.object === object);
+    if(!isInBirdsEyeView){
+        for (var i=0; i < scene.children.length; i++) {
+          for(const object of scene.children[i].children){
+            if (object.material) {
+              const isIntersected = intersects.find(intersect => intersect.object === object);
 
-          
-          if (isIntersected && !isOverlayUp) {
-            
-            // Sets color to red for intersected objects
-            object.material.color.set(0xff0000); 
+              
+              if (isIntersected && !isOverlayUp && !isInBirdsEyeView) {
+                
+                // Sets color to red for intersected objects
+                object.material.color.set(0xff0000); 
 
-            // Checks if planet has been clicked on, if yes runs the appropriate script
-            clickPlanet(object);
-            
-          } else {
-            // Sets color to white for non-intersected objects
-            object.material.color.set(0xffffff); 
+                // Checks if planet has been clicked on, if yes runs the appropriate script
+                clickPlanet(object);
+                
+              } else {
+                // Sets color to white for non-intersected objects
+                object.material.color.set(0xffffff); 
+              }
+            }
           }
         }
+    }else{
+      for (const object of scene.children) {
+        if(object.type = "LineLoop"){
+          const isIntersected = intersects.find(intersect => intersect.object === object);
+          let textMesh = scene.children.find(mesh => mesh.name === object.name.replace("orbit-", "orbitInfo-"));
+          if (isIntersected) {
+            // Increase text mesh size up to a limit 
+            if (textMesh.scale.x < MAX_TEXT_SCALE) {
+                textMesh.scale.set(textMesh.scale.x + TEXT_SCALE_STEP, textMesh.scale.y + TEXT_SCALE_STEP, textMesh.scale.z + TEXT_SCALE_STEP);
+            }
+          }else{
+            if (textMesh && textMesh.scale.x > 1) { // Assuming 1 is the original scale
+              textMesh.scale.set(textMesh.scale.x - TEXT_SCALE_STEP, textMesh.scale.y - TEXT_SCALE_STEP, textMesh.scale.z - TEXT_SCALE_STEP);
+            }
+          }
+        }
+
       }
-    }
-    
+
+      
+    };
 
     // Updates sunlight position to match camera position
     sunLight.position.copy(camera.position);
@@ -619,6 +789,31 @@ function followPlanet(){
     }
 }
 
+function samePlanetAngles(){
+  const sameAngleDegrees = 45;
+  // Convert angle to radians
+  
+  planets.mercury.start = sameAngleDegrees;
+  planets.venus.start = sameAngleDegrees;
+  planets.earth.start = sameAngleDegrees;
+  planets.mars.start = sameAngleDegrees;
+  planets.jupiter.start = sameAngleDegrees;
+  planets.saturn.start = sameAngleDegrees;
+  planets.uranus.start = sameAngleDegrees;
+  planets.neptune.start = sameAngleDegrees;
+
+  console.log("HEYYYY")
+}
+function randomizePlanetAngles(){
+  planets.mercury.start = Math.random() * 360;
+  planets.venus.start = Math.random() * 360;
+  planets.earth.start = Math.random() * 360;
+  planets.mars.start = Math.random() * 360;
+  planets.jupiter.start = Math.random() * 360;
+  planets.saturn.start = Math.random() * 360;
+  planets.uranus.start = Math.random() * 360;
+  planets.neptune.start = Math.random() * 360;
+}
  // Toggles the planet menu
  function togglePlanetMenu() {
   // Creates reference to html div for planet menu
@@ -668,8 +863,7 @@ function updateData(){
 
     // Rotates Earth
     earthMesh.rotation.y += planets.earth.rotationSpeed;
-    // earthLightsMesh.rotation.y += planets.earth.rotationSpeed;
-    // earthCloudsMesh.rotation.y += planets.earth.rotationSpeed;
+    
     // Moves Earth
     planetPositions.earth.x = Math.cos(planets.earth.start) * planets.earth.orbitRadius;
     planetPositions.earth.z = Math.sin(planets.earth.start) * planets.earth.orbitRadius;
@@ -730,7 +924,158 @@ function updateData(){
     sunLight.position.copy(camera.position);
     
 
+    // if(isInBirdsEyeView){
+    //   framePerSec++;
+    //   if(framePerSec >= 6){
+    //     framePerSec = 0;
+    //     timer++;
+    //     timer = timer % 10;
+        
+    //   }
+
+    //   orbitColorAnimation(timer);
+
+    // }
+    
+
 }
+function orbitColorAnimation(timer){
+    if(timer == 1){
+        allOrbits[orbitColors.mercury.key].material.color.setStyle(orbitColors.mercury.color);
+    }
+    if(timer == 2){
+      allOrbits[orbitColors.mercury.key].material.color.setStyle(orbitColors.base.color);
+      allOrbits[orbitColors.venus.key].material.color.setStyle(orbitColors.venus.color);
+    }
+    if(timer == 3){
+      allOrbits[orbitColors.venus.key].material.color.setStyle(orbitColors.base.color);
+      allOrbits[orbitColors.earth.key].material.color.setStyle(orbitColors.earth.color);
+    }
+    if(timer == 4){
+      allOrbits[orbitColors.earth.key].material.color.setStyle(orbitColors.base.color);
+      allOrbits[orbitColors.mars.key].material.color.setStyle(orbitColors.mars.color);
+    }
+    if(timer == 5){
+      allOrbits[orbitColors.mars.key].material.color.setStyle(orbitColors.base.color);
+      allOrbits[orbitColors.saturn.key].material.color.setStyle(orbitColors.saturn.color);
+    }
+    if(timer == 6){
+      allOrbits[orbitColors.saturn.key].material.color.setStyle(orbitColors.base.color);
+      allOrbits[orbitColors.jupiter.key].material.color.setStyle(orbitColors.jupiter.color);
+    }
+    if(timer == 7){
+      allOrbits[orbitColors.jupiter.key].material.color.setStyle(orbitColors.base.color);
+      allOrbits[orbitColors.uranus.key].material.color.setStyle(orbitColors.uranus.color);
+    }
+    if(timer == 8){
+      allOrbits[orbitColors.uranus.key].material.color.setStyle(orbitColors.base.color);
+      allOrbits[orbitColors.neptune.key].material.color.setStyle(orbitColors.neptune.color);
+    }
+    if(timer == 9){
+      allOrbits[orbitColors.neptune.key].material.color.setStyle(orbitColors.base.color);
+    }
+
+  
+
+}
+function outlineAllOrbits(){
+  addPlanetOrbit(planets.mercury.orbitRadius, planets.mercury.orbitIncline, "orbit-mercury", "orbitInfo-mercury");
+  addPlanetOrbit(planets.venus.orbitRadius, planets.venus.orbitIncline, "orbit-venus", "orbitInfo-venus");
+  addPlanetOrbit(planets.earth.orbitRadius, planets.earth.orbitIncline, "orbit-earth", "orbitInfo-earth");
+  addPlanetOrbit(planets.mars.orbitRadius, planets.mars.orbitIncline, "orbit-mars", "orbitInfo-mars");
+  addPlanetOrbit(planets.jupiter.orbitRadius, planets.jupiter.orbitIncline, "orbit-jupiter", "orbitInfo-jupiter");
+  addPlanetOrbit(planets.saturn.orbitRadius, planets.saturn.orbitIncline, "orbit-saturn", "orbitInfo-saturn");
+  addPlanetOrbit(planets.uranus.orbitRadius, planets.uranus.orbitIncline, "orbit-uranus", "orbitInfo-uranus");
+  addPlanetOrbit(planets.neptune.orbitRadius, planets.neptune.orbitIncline, "orbit-neptune", "orbitInfo-neptune");
+}
+function removeAllOrbitAndTextMeshes(){
+  allOrbits.forEach(orbit => {
+    scene.remove(orbit);
+
+    orbit.geometry.dispose();
+
+    orbit.material.dispose();
+  });
+  textMeshes.forEach(textMesh =>{
+    scene.remove(textMesh);
+
+    textMesh.geometry.dispose();
+
+    if (Array.isArray(textMesh.material)) {
+      textMesh.material.forEach(material => material.dispose());
+    } else {
+      textMesh.material.dispose();
+    }
+  });
+
+  allOrbits = [];
+}
+
+function loadFont(){
+  const loaderFont = new FontLoader;
+  loaderFont.load("fonts/spaceMono-Regular.json", function(font){
+    loadedFont = font;
+  })
+  
+}
+function addPlanetOrbit(orbitRadius, orbitIncline, orbitName, orbitInfoName) {
+  const orbitGeometry = createOrbitGeometry(orbitRadius);
+  const orbitMaterial = new THREE.LineBasicMaterial({ 
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.6,
+  }); 
+  const orbit = new THREE.LineLoop(orbitGeometry, orbitMaterial);
+
+  orbit.rotation.z = orbitIncline * Math.PI / 180;
+  orbit.name = orbitName;
+
+  allOrbits.push(orbit);
+  scene.add(orbit);
+
+  if (loadedFont) {
+        const orbitalPeriod = orbitalPeriods[orbitName.toLowerCase().replace("orbit-", "")]?.years;
+        if (orbitalPeriod === undefined) {
+          console.error('Orbital period not found for', orbitName);
+          return;
+        }
+        const textGeometry = new TextGeometry(orbitalPeriod + " years", {
+          font: loadedFont,
+          size: 2, // Adjusted size for better visibility
+          height: 0.1,
+        });
+        const textMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const textMesh = new THREE.Mesh(textGeometry, textMaterial);
+
+        // Simplify the position to ensure it's visible first
+        textMesh.position.set(orbitRadius, 0, 0); // Start with a simple position
+
+        // Rotate the text to face upwards
+        textMesh.rotation.x = -Math.PI / 2;
+
+        textMesh.name = orbitInfoName;
+
+        textMeshes.push(textMesh);
+        scene.add(textMesh);
+  } else {
+    console.error('Font not loaded');
+  }
+}
+function createOrbitGeometry(orbitRadius, segments = 64) {
+  const points = [];
+  for (let i = 0; i <= segments; i++) {
+    const angle = (i / segments) * 2 * Math.PI;
+    const x = orbitRadius * Math.cos(angle);
+    const y = 0; // Assuming orbits are in the XZ plane
+    const z = orbitRadius * Math.sin(angle);
+    points.push(new THREE.Vector3(x, y, z));
+  }
+
+  const geometry = new THREE.BufferGeometry().setFromPoints(points);
+  return geometry;
+}
+
+
 
 // Tracks the position of the cursor
 function onPointerMove( event ) {
@@ -1054,6 +1399,45 @@ function initPlanets(){
       
       
     }
+
+    
+}
+
+function initSun(){
+      // Create a sphere geometry
+      const sunGeometry = new THREE.IcosahedronGeometry(planetSize, 12);
+        
+      // Creates materials for Earth Mesh
+      
+      const sunMat = new THREE.MeshPhongMaterial({
+        map: loader.load("images/sun/sunmap.jpg"),
+      });
+
+      
+
+      // Creates mesh with geometry and material
+      sunMesh = new THREE.Mesh(sunGeometry, sunMat);
+      sunMesh.name = "sun";
+      // Create the mesh and add it to the sunGroup or scene
+      const sunGroup = new THREE.Group();
+      sunGroup.name = "sun";
+      
+      sunGroup.add(sunMesh);
+      
+
+      // const sunFresnelMat = getFresnelMat();
+      // const sunGlowMesh = new THREE.Mesh(sunGeometry, sunFresnelMat);
+      // sunGlowMesh.scale.setScalar(1.01);
+      
+      
+      
+    
+      // Add the cube to the scene
+      scene.add(sunGroup);
+      
+      sun = sunGroup;
+      // earthGroup.rotation.z = -23.4 * Math.PI / 180;
+
 }
 
 // Initiates the sunlight into the scene
@@ -1146,6 +1530,7 @@ function getStarfield({ numStars = 500} = {}) {
   });
 
   const points = new THREE.Points(geo, mat);
+  points.name = "stars"
   return points;
 }
 
