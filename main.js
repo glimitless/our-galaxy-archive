@@ -67,7 +67,7 @@ let textMeshes = [];
 
 // Define the starting position and birds-eye view position
 const startingPosition = new THREE.Vector3(0, 0, 5); // Example starting position
-const birdsEyeViewPosition = new THREE.Vector3(0, 350, 0); // Example birds-eye view position
+const birdsEyeViewPosition = new THREE.Vector3(0, 370, 0); // Example birds-eye view position
 
 // Define the starting rotation and birds-eye view rotation
 const startingRotation = new THREE.Euler(0, 0, 0); // Example starting rotation
