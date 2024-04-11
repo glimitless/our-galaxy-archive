@@ -58,10 +58,11 @@ a{
     display: block;
     width: 2rem; /* Width of the hamburger lines */
     height: 0.3rem; /* Height of the hamburger lines */
-    background-color: white; /* Color of the hamburger lines */
+    background-color: rgba(0, 123, 255, 0.6);
     margin: 0.3rem 0rem; /* Spacing between the lines */
     transition: all 0.3s ease-in-out;
 }
+
 
 /* General styles for the planet navigation menu */
 #planet-menu{
@@ -207,6 +208,16 @@ a{
     width: 40%;
     text-align: center;
 }
+/* increased witdth for planet description container */
+.planetInformationWidthExp{
+    font-family: "Space Mono", monospace;
+    font-weight: 400;
+    position: relative;
+    top: 10%;
+    margin: 0 auto;
+    width: 50%;
+    text-align: center;
+}
 
 /* Styles the tabs of the overlay div */
 .planet-info-tabs{
@@ -328,38 +339,35 @@ a{
     left: 0;
     bottom: 0;
     right: 0;
-    background-color: hsla(0, 0%, 100%, 0.3); /* White with 60% opacity */
+    background-color: hsla(0, 0%, 100%, 0.3); 
     -webkit-transition: .4s;
     transition: .4s;
 }
-  
+/* Switch handle */
 .slider:before {
     position: absolute;
     content: "";
-    width: 0.96rem; /* 1.2rem * 0.8 */
-    height: 0.96rem; /* 1.2rem * 0.8 */
-    left: 0.16rem; /* 0.2rem * 0.8 */
-    top: 0.16rem; /* 0.2rem * 0.8 */
-    background-color: hsla(0, 0%, 100%, 0.6);
+    width: 0.96rem; 
+    height: 0.96rem; 
+    left: 0.16rem; 
+    top: 0.16rem; 
+    background-color: rgba(0, 123, 255, 0.6);
     -webkit-transition: .4s;
     transition: .4s;
 }
-  
+/* how the background of the switch transitions when activated */
 input:checked + .slider {
-    background-color: #2196F3;
+    background-color: rgba(0, 123, 255, 0.3);
 }
-  
-input:focus + .slider {
-    box-shadow: 0 0 1px #2196F3;
-}
-  
+/* How the switch handle transitions with activated */
 input:checked + .slider:before {
-    -webkit-transform: translateY(0.96rem); /* 1.2rem * 0.8 */
-    -ms-transform: translateY(0.96rem); /* 1.2rem * 0.8 */
-    transform: translateY(0.96rem); /* 1.2rem * 0.8 */
+    background-color: rgba(255, 255, 255, 0.6);
+    -webkit-transform: translateY(0.96rem); 
+    -ms-transform: translateY(0.96rem); 
+    transform: translateY(0.96rem); 
 }
   
-/* Rounded sliders */
+/* Makes slider rounded */
 .slider.round {
     border-radius: 1.28rem; /* 1.6rem * 0.8 */
 }

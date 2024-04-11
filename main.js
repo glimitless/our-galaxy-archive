@@ -33,6 +33,7 @@ var timer = 0;
 const cameraPosition = camera.position;
 // Checks if camera needs to be reset into starting position
 var returnToCenter = false;
+var returnToBirdsEyeView = false;
 
 // Initiates raycaster
 const raycaster = new THREE.Raycaster();
@@ -48,12 +49,20 @@ let navPass = false;
 // Checks if planet overlay is currently displayed
 let isOverlayUp = false;
 
+// Checks if the scene is in birds-eye-view mode
 let isInBirdsEyeView = false;
 
-let sunGrowthVariable = 0.001;
-// code for later: glowMesh.scale.setScalar(1.01);
+// Ranges for increaseScalePlanets() & decreaseScalePlanets()
+const increasedScale = 1.9;
+const baseScale = 1;
 
+// Determines which angle all the planets start at in sameAngleDegrees()
+const sameAngleDegrees = 0;
+
+// Arrays that hold references to scene objects
 let allOrbits = [];
+let allTraveledPaths = [];
+let allPlanets = [];
 let textMeshes = [];
 
 // Define the starting position and birds-eye view position
@@ -65,66 +74,70 @@ const startingRotation = new THREE.Euler(0, 0, 0); // Example starting rotation
 const birdsEyeViewRotation = new THREE.Euler(-Math.PI / 2, 0, 0); // Example birds-eye view rotation, looking down
 
 
-// Co
-// Add event listener to the switch
+// Toggles the birds-eye-view mode on activation of the switch
 document.getElementById('viewToggle').addEventListener('change', function(event) {
-  timer = 0;
+  // Checks if the switch is or is not checked
   if (event.target.checked) {
-    // Switch to birds-eye view
+    // Switches the camera to birds-eye view
     isInBirdsEyeView = true;
     camera.position.copy(birdsEyeViewPosition);
     camera.rotation.copy(birdsEyeViewRotation);
+
+    // Makes the stars invisible
     scene.children.forEach((child) =>{
       if(child.name === "stars"){
           child.visible = false;
       }
     });
 
+    // Initiates the sun into the scene
     initSun();
+
+    // Outlines all orbits and the path traveled outline
     outlineAllOrbits();
+
+    // Places all planets at the same starting angle
     samePlanetAngles();
+
+    // Increases the size of the planet meshes
+    increaseScalePlanets();
+
+    
     
   } else {
     // Return to starting view
     isInBirdsEyeView = false;
+
+    // Returns camera to center of planetary dome
     camera.position.copy(startingPosition);
     camera.rotation.copy(startingRotation);
-    scene.children.forEach((child) =>{
-      if(child.name === "stars"){
-          child.visible = true;
-      }
-      if(child.name === "sun"){
-            // Remove the object from the scene
-            scene.remove(child);
-
-            // Dispose of geometry
-            if (child.geometry) {
-                child.geometry.dispose();
-            }
-
-            // Dispose of material
-            if (child.material) {
-                // If the object has a material array, dispose of each material
-                if (Array.isArray(child.material)) {
-                    child.material.forEach(material => material.dispose());
-                } else {
-                    child.material.dispose();
-                }
-            }
-
-            // Dispose of textures (if any)
-            if (child.material && child.material.map) {
-                child.material.map.dispose();
-            }
-            }
-            });
     
+    // Returns the size of the planets back to normal
+    decreaseScalePlanets();
+
+    // Removes the sun and reveals the stars in the scene.
+    removeSunRevealStars();
+
+    // Removes reference to SunMesh
     sun = null;
+
+    // Removes of orbit outlines & text meshes from the scene
     removeAllOrbitAndTextMeshes();  
+
+    // Randomizes the positions of the planets
     randomizePlanetAngles();
+
+    // Removes all references to orbit outlines from planet meshes
+    allPlanets.forEach(planet => {
+        planet.orbit = "";
+        planet.traveledPath = "";
+        planet.orbitGeometry = "";
+    });
+
+    
   }
 
-  // Update the camera
+  // Updates the camera
   camera.updateProjectionMatrix();
 });
 
@@ -151,7 +164,7 @@ document.addEventListener( 'pointermove', onPointerMove );
 document.getElementById('close-overlay').addEventListener('click', hideOverlay);
 
 
-// Initiates mesh layers of planets
+// Declares mesh layers of planets & the Sun
 let mercuryMesh;
 let venusMesh;
 let earthMesh;
@@ -190,13 +203,14 @@ const planetPositions = {
 
 }
 
+// Holds colours for orbit outlines
 const orbitColors = {
   base: {color: "#ffffff",},
-  mercury: {key: 0, color:"#B7B8B9",},
+  mercury: {key: 0, color:"#ecd67e",},
   venus: {key: 1, color:"#e39e1c",},
-  earth: {key: 2, color: "#4F6F52",},
+  earth: {key: 2, color: "#228B22",},
   mars: {key: 3, color: "#c1440e",},
-  saturn: {key: 4, color: "#ceb8b8",},
+  saturn: {key: 4, color: "#af8b8b",},
   jupiter: {key: 5, color: "#c99039",},
   uranus: {key: 6, color: "#37c0d6",},
   neptune: {key: 7, color: "#5b5ddf",},
@@ -350,38 +364,48 @@ const planetLinks = {
 
 };
 
+// Holds all orbital periods for the planets
 const orbitalPeriods = {
   mercury: {
-    days: "88",
-    years: "0.241"
+    days: "88 days",
+    years: "0.241 years",
+    eYears: "0.241 Earth years",
+    
   },
   venus: {
-    days: "224.7",
-    years: "0.615",
+    days: "224.7 days",
+    years: "0.615 years",
+    eYears: "0.615 Earth years",
     },
   earth: {
-    days: "365.26",
-    years: "1", 
+    days: "365.26 days",
+    years: "1 year", 
+    eYears: "1 Earth year", 
   },
   mars: {
-    days: "687",
-    years: "1.882",
+    days: "687 days",
+    years: "1.882 years",
+    eYears: "1.882 Earth years",
   },
   jupiter: {
-    days: "4328.9",
-    years: "11.86",
+    days: "4328.9 days",
+    years: "11.86 years",
+    eYears: "11.86 Earth years",
   },
   saturn: {
-    days: "10,756",
-    years: "29.4",
+    days: "10,756 days",
+    years: "29.4 years",
+    eYears: "29.4 Earth years",
   },
   uranus: {
-    days: "30,687",
-    years: "84",
+    days: "30,687 days",
+    years: "84 years",
+    eYears: "84 Earth years",
   },
   neptune: {
-    days: "60,190",
-    years: "165",
+    days: "60,190 days",
+    years: "165 years",
+    eYears: "165 Earth years",
   },
 
 
@@ -390,6 +414,7 @@ const orbitalPeriods = {
 // Stores the planet that was last clicked on
 let clickedPlanet = null;
 
+// Reference to SunMesh
 let sun = null;
 
 // Initiates the stars
@@ -422,6 +447,7 @@ planetNames.forEach(name => {
                 if (object.name === name) {
                     // Allows clickPlanet() function to be run
                     navPass = true;
+                    
 
                      // If a planet was previously clicked, returns the orbital incline the planet to its original value 
                     if(clickedPlanet){
@@ -439,7 +465,7 @@ planetNames.forEach(name => {
           }
       }
       // Close the menu after selection
-      document.getElementById('planet-menu').style.display = 'none';
+      togglePlanetMenu();
 });
   
   planetList.appendChild(li);
@@ -471,9 +497,6 @@ document.addEventListener('DOMContentLoaded', function() {
 // Renders the Javascript scene
 render();
 
-const MAX_TEXT_SCALE = 3; // Maximum scale for the text mesh
-const TEXT_SCALE_STEP = 0.05; // Incremental step for changing the text mesh scale
-let currentlyHoveredOrbit = [];
 
 // Renders Javascript scene
 function render() {
@@ -486,49 +509,31 @@ function render() {
     
     // Change color of intersected objects to red and reset others to white
     // Also checks if planet has been clicked
-    if(!isInBirdsEyeView){
-        for (var i=0; i < scene.children.length; i++) {
-          for(const object of scene.children[i].children){
-            if (object.material) {
-              const isIntersected = intersects.find(intersect => intersect.object === object);
+    
+    for (var i=0; i < scene.children.length; i++) {
+      if(scene.children[i].type === "Group"){
+        for(const object of scene.children[i].children){
+          if (object.material && object.name != "sun") {
+            const isIntersected = intersects.find(intersect => intersect.object === object);
 
+            
+            if (isIntersected && !isOverlayUp) {
               
-              if (isIntersected && !isOverlayUp && !isInBirdsEyeView) {
-                
-                // Sets color to red for intersected objects
-                object.material.color.set(0xff0000); 
+              // Sets color to blue for intersected objects
+              object.material.color.set(0x0056b3); 
 
-                // Checks if planet has been clicked on, if yes runs the appropriate script
-                clickPlanet(object);
-                
-              } else {
-                // Sets color to white for non-intersected objects
-                object.material.color.set(0xffffff); 
-              }
+              // Checks if planet has been clicked on, if yes runs the appropriate script
+              clickPlanet(object);
+              
+            } else {
+              // Sets color to white for non-intersected objects
+              object.material.color.set(0xffffff); 
             }
           }
         }
-    }else{
-      for (const object of scene.children) {
-        if(object.type = "LineLoop"){
-          const isIntersected = intersects.find(intersect => intersect.object === object);
-          let textMesh = scene.children.find(mesh => mesh.name === object.name.replace("orbit-", "orbitInfo-"));
-          if (isIntersected) {
-            // Increase text mesh size up to a limit 
-            if (textMesh.scale.x < MAX_TEXT_SCALE) {
-                textMesh.scale.set(textMesh.scale.x + TEXT_SCALE_STEP, textMesh.scale.y + TEXT_SCALE_STEP, textMesh.scale.z + TEXT_SCALE_STEP);
-            }
-          }else{
-            if (textMesh && textMesh.scale.x > 1) { // Assuming 1 is the original scale
-              textMesh.scale.set(textMesh.scale.x - TEXT_SCALE_STEP, textMesh.scale.y - TEXT_SCALE_STEP, textMesh.scale.z - TEXT_SCALE_STEP);
-            }
-          }
-        }
-
       }
-
-      
     };
+    
 
     // Updates sunlight position to match camera position
     sunLight.position.copy(camera.position);
@@ -553,6 +558,20 @@ function render() {
     // Render the scene
     renderer.render(scene, camera);
 
+    // Updates progress on the planets orbital path
+    if(isInBirdsEyeView){
+      updateTraveledPath("mercury");
+      updateTraveledPath("venus");
+      updateTraveledPath("earth");
+      updateTraveledPath("mars");
+      updateTraveledPath("jupiter");
+      updateTraveledPath("saturn");
+      updateTraveledPath("uranus");
+      updateTraveledPath("neptune");
+
+
+    }
+
     // Amimates the render
     requestAnimationFrame(render);
     
@@ -573,15 +592,23 @@ function clickPlanet(planet){
 
           // Confirms no planet should be tracked by camera
           clickedPlanet = null;
+          
 
-          // Confirms camera should be returned to center of scene
-          returnToCenter = true;
-
+          if(isInBirdsEyeView){
+             // Confirms camera should be returned to birds-eye-view
+            returnToBirdsEyeView = true;
+            // Increases the size of the planets
+            increaseScalePlanets();
+          }else{
+             // Confirms camera should be returned to center of scene
+             returnToCenter = true;
+            
+          }
           // Hides the planet overlay
           hideOverlay();
 
           
-
+          
 
           
           // Show the intro text again
@@ -594,7 +621,9 @@ function clickPlanet(planet){
           
           // Indicates which planet for the camera to track
           clickedPlanet = planet;
-
+          if (isInBirdsEyeView){
+              decreaseScalePlanets();
+          }
           // Sets the orbital incline of the planet to zero
           scene.children.forEach((child) =>{
               if(planet.name === child.name){
@@ -622,10 +651,9 @@ function showOverlayForPlanet(planet) {
     const overlay = document.getElementById('planet-info-overlay');
     const planetName = document.getElementById('planet-name');
     const descriptionContainer = document.getElementById('planet-description');
+    let descriptionFromObject = "";
 
-    // Finds the description within an object for the given planet name
-    const descriptionFromObject = planetDescriptions[planet.name.toLowerCase()].find(entry => entry.name === "summary");
-
+    
     // Sets the name and description based on the clicked planet
     planetName.textContent = planet.name;
 
@@ -635,9 +663,20 @@ function showOverlayForPlanet(planet) {
     // Sets the tabs of the planet overlay div
     setPlanetTabs(planet.name.toLowerCase());
 
-    // fills the description container with the planet summary text
-    descriptionContainer.textContent = descriptionFromObject.description // Using the planetDescriptions object
-
+    
+    if(!isInBirdsEyeView){
+      // Finds the description within an object for the given planet name
+      descriptionFromObject = planetDescriptions[planet.name.toLowerCase()].find(entry => entry.name === "summary");
+      // fills the description container with the planet summary text
+      descriptionContainer.textContent = descriptionFromObject.description // Using the planetDescriptions object
+      descriptionContainer.className = "planetInformation";
+      
+    }else{
+      // Fills the description container with details pertaining to the orbit of the selected planet
+      descriptionContainer.textContent = "Orbital Period: " + orbitalPeriods[planet.name].eYears;
+      descriptionContainer.className = "planetInformationWidthExp";
+      
+    }
     
     
     // Displays the planet overlay
@@ -665,39 +704,50 @@ function planetNameClickHandler(planetName){
 
 // Sets the tabs for the planet overlay div
 function setPlanetTabs(planetName) {
+
   // Creates reference for html div that holds the tabs
   const tabsContainer = document.getElementById('planet-tabs');
   // Clears existing tabs
   tabsContainer.innerHTML = ''; 
 
-  // Isolates object with aspect names & descriptions for specified planet
-  const aspects = planetDescriptions[planetName];
+
+  if(!isInBirdsEyeView){
+    // Isolates object with aspect names & descriptions for specified planet
+    const aspects = planetDescriptions[planetName];
 
   // Creates tab for each aspect
-  if (aspects) {
-      aspects.forEach(aspect => {
-        if(aspect.name != "summary"){
-          const p = document.createElement('p');
-          p.textContent = aspect.name;
-          p.className = 'planet-info-tabs'; // Use the class for styling
-          tabsContainer.appendChild(p);
-          
-          
-          // Create and append the line break
-          const br = document.createElement('br');
-          tabsContainer.appendChild(br);
-        }
-      });
-  
-  
-  }
+    if (aspects) {
+        aspects.forEach(aspect => {
+          if(aspect.name != "summary"){
+            const p = document.createElement('p');
+            p.textContent = aspect.name;
+            p.className = 'planet-info-tabs'; // Use the class for styling
+            tabsContainer.appendChild(p);
+            
+            
+            // Create and append the line break
+            const br = document.createElement('br');
+            tabsContainer.appendChild(br);
+          }
+        });
 
-  // Attaches click event listeners for each tab
-  document.querySelectorAll('.planet-info-tabs').forEach(tab => {
+        // Attaches click event listeners for each tab
+    document.querySelectorAll('.planet-info-tabs').forEach(tab => {
     // Generates and stores the listener function
     tab._tabClickListener = createTabClickListener(planetName);
     tab.addEventListener('click', tab._tabClickListener);
   });
+    }
+  
+  }else{
+      // Creates singular tab for orbit details
+      const p = document.createElement('p');
+      p.textContent = "Orbit Details";
+      p.className = 'planet-info-tabs'; // Use the class for styling
+      tabsContainer.appendChild(p);
+  }
+
+  
 }
 
 // Allows for planet name event listener to be referenced
@@ -789,10 +839,8 @@ function followPlanet(){
     }
 }
 
+// Sets all planets to the same orbital angle
 function samePlanetAngles(){
-  const sameAngleDegrees = 45;
-  // Convert angle to radians
-  
   planets.mercury.start = sameAngleDegrees;
   planets.venus.start = sameAngleDegrees;
   planets.earth.start = sameAngleDegrees;
@@ -802,8 +850,8 @@ function samePlanetAngles(){
   planets.uranus.start = sameAngleDegrees;
   planets.neptune.start = sameAngleDegrees;
 
-  console.log("HEYYYY")
 }
+// Sets all planets to random orbital angles
 function randomizePlanetAngles(){
   planets.mercury.start = Math.random() * 360;
   planets.venus.start = Math.random() * 360;
@@ -818,17 +866,22 @@ function randomizePlanetAngles(){
  function togglePlanetMenu() {
   // Creates reference to html div for planet menu
   var planetMenu = document.getElementById('planet-menu');
+  var menuIcon = document.getElementById('menu-icon');
 
   // Transitions the planet menu from open to closed, or closed to open
   if (planetMenu.style.opacity === '0.6') {
       planetMenu.style.opacity = '0';
       planetMenu.style.right = '-12.5rem'; // Move the menu out of view
+      menuIcon.style.display = 'block';
+
       setTimeout(() => { planetMenu.style.display = 'none'; }, 500); // Wait for the transition to finish before hiding
   } else {
       planetMenu.style.display = 'block';
       setTimeout(() => {
           planetMenu.style.opacity = '0.6';
+          menuIcon.style.display = 'none';
           planetMenu.style.right = '0'; // Move the menu into view
+          
       }, 10); // A slight delay to ensure the display property is applied before transitioning
   }
 }
@@ -838,6 +891,10 @@ function resetPosition(){
     if(returnToCenter){
         camera.position.set(0, 0, 5);
         returnToCenter = false;
+    }else if(returnToBirdsEyeView){
+      camera.position.copy(birdsEyeViewPosition);
+      camera.rotation.copy(birdsEyeViewRotation);
+      returnToBirdsEyeView = false;
     }
 }
 
@@ -924,71 +981,23 @@ function updateData(){
     sunLight.position.copy(camera.position);
     
 
-    // if(isInBirdsEyeView){
-    //   framePerSec++;
-    //   if(framePerSec >= 6){
-    //     framePerSec = 0;
-    //     timer++;
-    //     timer = timer % 10;
-        
-    //   }
-
-    //   orbitColorAnimation(timer);
-
-    // }
-    
-
 }
-function orbitColorAnimation(timer){
-    if(timer == 1){
-        allOrbits[orbitColors.mercury.key].material.color.setStyle(orbitColors.mercury.color);
-    }
-    if(timer == 2){
-      allOrbits[orbitColors.mercury.key].material.color.setStyle(orbitColors.base.color);
-      allOrbits[orbitColors.venus.key].material.color.setStyle(orbitColors.venus.color);
-    }
-    if(timer == 3){
-      allOrbits[orbitColors.venus.key].material.color.setStyle(orbitColors.base.color);
-      allOrbits[orbitColors.earth.key].material.color.setStyle(orbitColors.earth.color);
-    }
-    if(timer == 4){
-      allOrbits[orbitColors.earth.key].material.color.setStyle(orbitColors.base.color);
-      allOrbits[orbitColors.mars.key].material.color.setStyle(orbitColors.mars.color);
-    }
-    if(timer == 5){
-      allOrbits[orbitColors.mars.key].material.color.setStyle(orbitColors.base.color);
-      allOrbits[orbitColors.saturn.key].material.color.setStyle(orbitColors.saturn.color);
-    }
-    if(timer == 6){
-      allOrbits[orbitColors.saturn.key].material.color.setStyle(orbitColors.base.color);
-      allOrbits[orbitColors.jupiter.key].material.color.setStyle(orbitColors.jupiter.color);
-    }
-    if(timer == 7){
-      allOrbits[orbitColors.jupiter.key].material.color.setStyle(orbitColors.base.color);
-      allOrbits[orbitColors.uranus.key].material.color.setStyle(orbitColors.uranus.color);
-    }
-    if(timer == 8){
-      allOrbits[orbitColors.uranus.key].material.color.setStyle(orbitColors.base.color);
-      allOrbits[orbitColors.neptune.key].material.color.setStyle(orbitColors.neptune.color);
-    }
-    if(timer == 9){
-      allOrbits[orbitColors.neptune.key].material.color.setStyle(orbitColors.base.color);
-    }
 
-  
-
-}
+// Outlines all planet & paths traveled orbits
 function outlineAllOrbits(){
-  addPlanetOrbit(planets.mercury.orbitRadius, planets.mercury.orbitIncline, "orbit-mercury", "orbitInfo-mercury");
-  addPlanetOrbit(planets.venus.orbitRadius, planets.venus.orbitIncline, "orbit-venus", "orbitInfo-venus");
-  addPlanetOrbit(planets.earth.orbitRadius, planets.earth.orbitIncline, "orbit-earth", "orbitInfo-earth");
-  addPlanetOrbit(planets.mars.orbitRadius, planets.mars.orbitIncline, "orbit-mars", "orbitInfo-mars");
-  addPlanetOrbit(planets.jupiter.orbitRadius, planets.jupiter.orbitIncline, "orbit-jupiter", "orbitInfo-jupiter");
-  addPlanetOrbit(planets.saturn.orbitRadius, planets.saturn.orbitIncline, "orbit-saturn", "orbitInfo-saturn");
-  addPlanetOrbit(planets.uranus.orbitRadius, planets.uranus.orbitIncline, "orbit-uranus", "orbitInfo-uranus");
-  addPlanetOrbit(planets.neptune.orbitRadius, planets.neptune.orbitIncline, "orbit-neptune", "orbitInfo-neptune");
+  addPlanetAndPathTraveledOrbits(planets.mercury.orbitRadius, planets.mercury.orbitIncline, "orbit-mercury", "orbitInfo-mercury", "traveledPath-mercury", orbitColors.mercury.color);
+  addPlanetAndPathTraveledOrbits(planets.venus.orbitRadius, planets.venus.orbitIncline, "orbit-venus", "orbitInfo-venus", "traveledPath-venus", orbitColors.venus.color);
+  addPlanetAndPathTraveledOrbits(planets.earth.orbitRadius, planets.earth.orbitIncline, "orbit-earth", "orbitInfo-earth", "traveledPath-earth", orbitColors.earth.color);
+  addPlanetAndPathTraveledOrbits(planets.mars.orbitRadius, planets.mars.orbitIncline, "orbit-mars", "orbitInfo-mars", "traveledPath-mars", orbitColors.mars.color);
+  addPlanetAndPathTraveledOrbits(planets.jupiter.orbitRadius, planets.jupiter.orbitIncline, "orbit-jupiter", "orbitInfo-jupiter", "traveledPath-jupiter", orbitColors.jupiter.color);
+  addPlanetAndPathTraveledOrbits(planets.saturn.orbitRadius, planets.saturn.orbitIncline, "orbit-saturn", "orbitInfo-saturn", "traveledPath-saturn", orbitColors.saturn.color);
+  addPlanetAndPathTraveledOrbits(planets.uranus.orbitRadius, planets.uranus.orbitIncline, "orbit-uranus", "orbitInfo-uranus", "traveledPath-uranus", orbitColors.uranus.color);
+  addPlanetAndPathTraveledOrbits(planets.neptune.orbitRadius, planets.neptune.orbitIncline, "orbit-neptune", "orbitInfo-neptune", "traveledPath-neptune", orbitColors.neptune.color);
+  
 }
+// Removes all orbits outlines & text meshes from the scene
 function removeAllOrbitAndTextMeshes(){
+  // Removes all planet orbit outlines from scene. Disposes of all geometries and materials for planet orbit outlines.
   allOrbits.forEach(orbit => {
     scene.remove(orbit);
 
@@ -996,6 +1005,7 @@ function removeAllOrbitAndTextMeshes(){
 
     orbit.material.dispose();
   });
+  // Removes all text meshes from scene. Disposes of all geometries and materials for text meshes.
   textMeshes.forEach(textMesh =>{
     scene.remove(textMesh);
 
@@ -1007,10 +1017,24 @@ function removeAllOrbitAndTextMeshes(){
       textMesh.material.dispose();
     }
   });
+  // Removes all paths traveled orbit outlines from scene. Disposes of all geometries and materials for paths traveled orbit outlines.
+  allTraveledPaths.forEach(orbit => {
+    scene.remove(orbit);
 
+    orbit.geometry.dispose();
+
+    orbit.material.dispose();
+  });
+
+  // Clears all references to orbit outlines & text meshes
   allOrbits = [];
+  textMeshes = [];
+  allTraveledPaths = [];
+
+
 }
 
+// loads font into 3D scene
 function loadFont(){
   const loaderFont = new FontLoader;
   loaderFont.load("fonts/spaceMono-Regular.json", function(font){
@@ -1018,49 +1042,105 @@ function loadFont(){
   })
   
 }
-function addPlanetOrbit(orbitRadius, orbitIncline, orbitName, orbitInfoName) {
-  const orbitGeometry = createOrbitGeometry(orbitRadius);
+
+// Initiates planet orbit & path traveled outlines
+function addPlanetAndPathTraveledOrbits(orbitRadius, orbitIncline, orbitName, orbitInfoName, traveledPathName, traveledPathColor) {
+  // Creates geometry for orbit outline
+  const orbitGeometry = createOrbitGeometry(orbitRadius, 160);
+  // Creates material for orbit outline
   const orbitMaterial = new THREE.LineBasicMaterial({ 
     color: 0xffffff,
     transparent: true,
     opacity: 0.6,
   }); 
+  // Initiates orbit outline
   const orbit = new THREE.LineLoop(orbitGeometry, orbitMaterial);
 
+  // Inclines the orbit outline
   orbit.rotation.z = orbitIncline * Math.PI / 180;
+
+  // Defines name property for the orbit outline
   orbit.name = orbitName;
 
+  // Stores reference for the orbit outline
   allOrbits.push(orbit);
+  // Adds orbit outline to the scene
   scene.add(orbit);
 
+
+
+
+  // Creates material for path traveled outline
+  const traveledPathMaterial = new THREE.LineBasicMaterial({ color: traveledPathColor });
+  // Initiates path traveled outline
+  const traveledPath = new THREE.Line(orbitGeometry, traveledPathMaterial);
+
+  // Defines name property for the path traveled outline
+  traveledPath.name = traveledPathName;
+
+  // Inclines the path traveled outline
+  traveledPath.rotation.z = orbitIncline * Math.PI / 180;
+
+  // Stores reference for the path traveled outline
+  allTraveledPaths.push(traveledPath);
+  // Adds path traveled outline to the scene
+  scene.add(traveledPath);
+
+  // References geometry, orbit outline, & path traveled outline to respective planet meshes
+  allPlanets.forEach(planet => {
+      if (planet.name === orbitName.toLowerCase().replace("orbit-", "")){
+        planet.orbit = orbit;
+        planet.traveledPath = traveledPath;
+        planet.orbitGeometry = orbitGeometry;
+      }
+  });
+
+
+  // Initiates text mesh if font is properly loaded
   if (loadedFont) {
+        // Defines text to inserted into scene
         const orbitalPeriod = orbitalPeriods[orbitName.toLowerCase().replace("orbit-", "")]?.years;
+
+        // returns console error is text to be inserted is undefined
         if (orbitalPeriod === undefined) {
           console.error('Orbital period not found for', orbitName);
           return;
         }
-        const textGeometry = new TextGeometry(orbitalPeriod + " years", {
+
+        // Defines geometry of text mesh
+        const textGeometry = new TextGeometry(orbitalPeriod, {
           font: loadedFont,
           size: 2, // Adjusted size for better visibility
           height: 0.1,
         });
+
+        // Defines material of text mesh
         const textMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+
+        // Initiates the text mesh
         const textMesh = new THREE.Mesh(textGeometry, textMaterial);
 
-        // Simplify the position to ensure it's visible first
-        textMesh.position.set(orbitRadius, 0, 0); // Start with a simple position
+        // Sets the position of the text mesh
+        textMesh.position.set(orbitRadius, 0, 0); 
 
-        // Rotate the text to face upwards
+        // Rotates the text to face upwards
         textMesh.rotation.x = -Math.PI / 2;
 
+        // Defines the name property of text mesh
         textMesh.name = orbitInfoName;
 
+        // Stores reference of text mesh
         textMeshes.push(textMesh);
+
+        // Adds text mesh to scene
         scene.add(textMesh);
   } else {
+    // Returns error if font is not loaded
     console.error('Font not loaded');
   }
 }
+
+// Creates geometry for orbit outlines
 function createOrbitGeometry(orbitRadius, segments = 64) {
   const points = [];
   for (let i = 0; i <= segments; i++) {
@@ -1075,7 +1155,38 @@ function createOrbitGeometry(orbitRadius, segments = 64) {
   return geometry;
 }
 
+// Updates the traveled path outline based on the planet's position
+function updateTraveledPath(planetName) {
 
+  // Defines variables required for path traveled calculation
+  const planet = allPlanets.find(object => object.name === planetName);
+  const planetMesh = planet; 
+  const planetPosition = new THREE.Vector3();
+  planetMesh.getWorldPosition(planetPosition);
+  const orbitGeometry = planet.orbitGeometry;
+  const positions = orbitGeometry.attributes.position.array;
+  const vertexCount = positions.length / 3; // Each vertex has 3 values (x, y, z)
+
+  // Calculates the angle and percent traveled
+  const angle = Math.atan2(planetPosition.z, planetPosition.x);
+  const normalizedAngle = angle >= 0 ? angle : (2 * Math.PI + angle);
+  const percentTraveled = normalizedAngle / (2 * Math.PI);
+
+  // Calculates the index up to which vertices should be considered as traveled
+  const traveledIndex = Math.ceil(vertexCount * percentTraveled) * 3; // Multiply by 3 since each vertex consists of 3 values
+
+  // Creates a new array for the traveled path's positions
+  const traveledPositions = new Float32Array(traveledIndex);
+  for (let i = 0; i < traveledIndex; i++) {
+    traveledPositions[i] = positions[i];
+  }
+
+  // Updates the traveled path geometry
+  const traveledGeometry = new THREE.BufferGeometry();
+  traveledGeometry.setAttribute('position', new THREE.BufferAttribute(traveledPositions, 3));
+  planet.traveledPath.geometry.dispose(); // Dispose of the old geometry
+  planet.traveledPath.geometry = traveledGeometry;
+}
 
 // Tracks the position of the cursor
 function onPointerMove( event ) {
@@ -1121,11 +1232,12 @@ function initPlanets(){
         
         mercuryGroup.rotation.z = planets.mercury.orbitIncline * Math.PI/180;
         mercuryGroup.add(mercuryMesh);
-        
+        allPlanets.push(mercuryMesh);
         
       
         // Add the cube to the scene
         scene.add(mercuryGroup);
+        
         // earthGroup.rotation.z = -23.4 * Math.PI / 180;
 
     
@@ -1159,6 +1271,8 @@ function initPlanets(){
 
       venusGroup.rotation.z = planets.venus.orbitIncline * Math.PI/180;
       venusGroup.add(venusMesh);
+
+      allPlanets.push(venusMesh);
       
       
     
@@ -1210,6 +1324,8 @@ function initPlanets(){
         
         earthGroup.rotation.z = planets.earth.orbitIncline * Math.PI/180;
         earthGroup.add(earthMesh);
+
+        allPlanets.push(earthMesh);
         // earthGroup.add(earthLightsMesh);
         // earthGroup.add(earthCloudsMesh);
         
@@ -1253,6 +1369,8 @@ function initPlanets(){
       
       marsGroup.rotation.z = planets.mars.orbitIncline * Math.PI/180;
       marsGroup.add(marsMesh);
+
+      allPlanets.push(marsMesh);
       
       
     
@@ -1288,6 +1406,7 @@ function initPlanets(){
       jupiterGroup.rotation.z = planets.jupiter.orbitIncline * Math.PI/180;
       jupiterGroup.add(jupiterMesh);
       
+      allPlanets.push(jupiterMesh);
       
     
       // Adds Jupiter to the scene
@@ -1322,6 +1441,7 @@ function initPlanets(){
       saturnGroup.rotation.z = planets.saturn.orbitIncline * Math.PI/180;
       saturnGroup.add(saturnMesh);
       
+      allPlanets.push(saturnMesh);
       
     
       // Adds Saturn to the scene
@@ -1356,6 +1476,8 @@ function initPlanets(){
       uranusGroup.rotation.z = planets.uranus.orbitIncline * Math.PI/180;
       uranusGroup.name = "uranus";
       uranusGroup.add(uranusMesh);
+
+      allPlanets.push(uranusMesh);
       
       
     
@@ -1390,6 +1512,8 @@ function initPlanets(){
 
       neptuneGroup.rotation.z = planets.neptune.orbitIncline * Math.PI/180;
       neptuneGroup.add(neptuneMesh);
+
+      allPlanets.push(neptuneMesh);
       
       
     
@@ -1403,6 +1527,7 @@ function initPlanets(){
     
 }
 
+// Initiates the Sun into the scene
 function initSun(){
       // Create a sphere geometry
       const sunGeometry = new THREE.IcosahedronGeometry(planetSize, 12);
@@ -1439,6 +1564,77 @@ function initSun(){
       // earthGroup.rotation.z = -23.4 * Math.PI / 180;
 
 }
+
+// Removes the Sun and reveals the stars in the scene
+function removeSunRevealStars(){
+  scene.children.forEach((child) =>{
+    if(child.name === "stars"){
+        child.visible = true;
+    }
+    if(child.name === "sun"){
+          // Removes the object from the scene
+          scene.remove(child);
+
+          // Disposes of geometry
+          if (child.geometry) {
+              child.geometry.dispose();
+          }
+
+          // Disposes of material
+          if (child.material) {
+              // If the object has a material array, dispose of each material
+              if (Array.isArray(child.material)) {
+                  child.material.forEach(material => material.dispose());
+              } else {
+                  child.material.dispose();
+              }
+          }
+
+          // Disposes of textures (if any)
+          if (child.material && child.material.map) {
+              child.material.map.dispose();
+          }
+          }
+          });
+}
+
+// Increases the scale of all planets in the scene
+function increaseScalePlanets(){
+  for (var i=0; i < scene.children.length; i++) {
+    if(scene.children[i].type === "Group"){
+      for(const object of scene.children[i].children){
+        if (object.material && object.name != "sun") {
+          
+          object.scale.set(increasedScale, increasedScale, increasedScale);
+
+          } 
+        }
+      }
+    }
+
+};
+
+// Returns the scale of all planets in the scene to normal
+function decreaseScalePlanets(){
+  
+  
+  
+  for (var i=0; i < scene.children.length; i++) {
+    if(scene.children[i].type === "Group"){
+      for(const object of scene.children[i].children){
+        if (object.material && object.name != "sun") {
+          
+          object.scale.set(baseScale, baseScale, baseScale);
+
+          } 
+        }
+      }
+    }
+
+
+
+};
+
 
 // Initiates the sunlight into the scene
 function initSunlight(){
